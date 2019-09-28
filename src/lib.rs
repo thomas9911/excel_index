@@ -1,3 +1,30 @@
+//! Zero indexed Excel like column row indexes. (examples A3, J18)
+//!
+//!
+//! ```
+//! use excel_index::ExcelIndex;
+//!
+//! use std::str::FromStr;
+//!
+//! let A1: ExcelIndex = (0, 0).into();
+//! let A6 = ExcelIndex::from((0, 5));
+//! let B1 = ExcelIndex::from_tuple(1, 0);
+//! let excel_index_with_tuple_two_six = ExcelIndex::from_str("C7").unwrap();
+//!
+//! ```
+//!
+//! ```
+//! use excel_index::ExcelIndex;
+//!
+//! use std::str::FromStr;
+//!
+//! // creates an iterator from A1 to F4 (A1, B1, C1, D1, E1, F1, A2, B2, ..., E4, F4)
+//! for cell in ExcelIndex::from((0, 0)).into_range(ExcelIndex::from_str("F4").unwrap()) {
+//!     println!("{}", cell);
+//! }
+//! ```
+
+
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
@@ -68,12 +95,13 @@ impl From<ExcelIndex> for String {
 impl FromStr for ExcelIndex {
     type Err = ();
     fn from_str(s: &str) -> Result<ExcelIndex, ()> {
-        let caps = RE.captures(s).unwrap();
+        let s = s.to_uppercase();
+        let caps = RE.captures(&s).unwrap();
         let x: AlphaNumber = caps.name("x").unwrap().as_str().parse().unwrap();
         let y: u32 = caps.name("y").unwrap().as_str().parse().unwrap();
         Ok(ExcelIndex {
             coordinates: (x.number, y - 1),
-            letters: s.to_string(),
+            letters: s,
         })
     }
 }
@@ -122,7 +150,8 @@ fn unpack_integer_to_chars(x: u32, txt: &mut String) {
 impl FromStr for AlphaNumber {
     type Err = ();
     fn from_str(s: &str) -> Result<AlphaNumber, ()> {
-        let caps = RE2.captures(s).unwrap();
+        let s = s.to_uppercase();
+        let caps = RE2.captures(&s).unwrap();
         let x = caps.name("x").unwrap().as_str();
         let mut sum: u32 = 0;
 
@@ -140,7 +169,7 @@ impl FromStr for AlphaNumber {
 
         Ok(AlphaNumber {
             number: sum,
-            letters: s.to_string(),
+            letters: s,
         })
     }
 }
@@ -237,6 +266,16 @@ mod tests {
     }
 
     #[test]
+    fn parse_easy_str_lowercase() {
+        let expected = ExcelIndex {
+            coordinates: (0, 1),
+            letters: String::from("A2"),
+        };
+        let ey: ExcelIndex = "a2".parse().unwrap();
+        assert_eq!(expected, ey);
+    }
+
+    #[test]
     fn parse_easy_tuple() {
         let expected = ExcelIndex {
             coordinates: (0, 1),
@@ -298,6 +337,9 @@ mod tests {
         let t: AlphaNumber = "A".parse().unwrap();
         assert_eq!(t.number, 0);
 
+        let t: AlphaNumber ="B".parse().unwrap();
+        assert_eq!(t.number, 1);
+
         let t: AlphaNumber = "Z".parse().unwrap();
         assert_eq!(t.number, 25);
 
@@ -315,6 +357,9 @@ mod tests {
 
         let t: AlphaNumber = "AMH".parse().unwrap();
         assert_eq!(t.number, 1021);
+
+        let t: AlphaNumber ="b".parse().unwrap();
+        assert_eq!(t.number, 1);
     }
 
     #[test]
