@@ -35,6 +35,11 @@ impl ExcelIndex {
     pub fn into_range(self, end: ExcelIndex) -> ExcelIndexRange {
         ExcelIndexRange::range(self, end)
     }
+
+    /// creates an iterator over the range starting at the end, inclusive
+    pub fn into_range_at_end(self, end: ExcelIndex) -> ExcelIndexRange {
+        ExcelIndexRange::range_reverse(self, end)
+    }
 }
 
 impl From<(u32, u32)> for ExcelIndex {
@@ -87,11 +92,12 @@ impl std::fmt::Display for ExcelIndex {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ExcelIndexRange {
     current: ExcelIndex,
     start: ExcelIndex,
     end: Option<ExcelIndex>,
+    done: bool,
 }
 
 impl ExcelIndexRange {
@@ -100,15 +106,42 @@ impl ExcelIndexRange {
             start: current.clone(),
             current,
             end: None,
+            done: false,
+        }
+    }
+
+    pub fn set_current(&mut self, current: ExcelIndex){
+        self.current = current;
+    }
+
+    pub fn range_at(start: ExcelIndex, end: ExcelIndex, current: ExcelIndex) -> ExcelIndexRange {
+        ExcelIndexRange {
+            current,
+            start,
+            end: Some(end),
+            done: false,
         }
     }
 
     pub fn range(start: ExcelIndex, end: ExcelIndex) -> ExcelIndexRange {
-        ExcelIndexRange {
-            current: start.clone(),
-            start,
-            end: Some(end),
-        }
+        // ExcelIndexRange {
+        //     current: start.clone(),
+        //     start,
+        //     end: Some(end),
+        //     done: false,
+        // }
+        ExcelIndexRange::range_at(start.clone(), end, start)
+    }
+
+    pub fn range_reverse(start: ExcelIndex, end: ExcelIndex) -> ExcelIndexRange {
+        // ExcelIndexRange {
+        //     current: end.clone(),
+        //     start,
+        //     end: Some(end),
+        //     done: false,
+        // }
+        ExcelIndexRange::range_at(start, end.clone(), end)
+
     }
 
     pub fn range_bounded(start: ExcelIndex, end: ExcelIndex) -> ExcelIndexRange {
@@ -165,9 +198,51 @@ impl Iterator for ExcelIndexRange {
     }
 }
 
+impl DoubleEndedIterator for ExcelIndexRange {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        if let Some(end) = &self.end {
+            if self.start.coordinates > self.current.coordinates {
+                return None;
+            }
+
+            if end.coordinates < self.current.coordinates {
+                return None;
+            }
+
+            let (s, w): (u32, u32) = self.start.clone().into();
+            let (r, t): (u32, u32) = self.current.clone().into();
+            let (x, _): (u32, u32) = end.clone().into();
+
+            if r == s {
+                if t == w {
+                    self.done = true;
+                    return Some(self.current.clone());
+                } else {
+                    let next: ExcelIndex = (x, t - 1).into();
+
+                    let current = self.current.clone();
+                    self.current = next;
+                    return Some(current);
+                }
+            }
+
+            let next: ExcelIndex = (r - 1, t).into();
+
+            let current = self.current.clone();
+            self.current = next;
+            return Some(current);
+        } else {
+            return None;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::ExcelIndex;
+    use crate::{ExcelIndex, ExcelIndexRange};
     #[test]
     fn parse_easy_str() {
         let expected = ExcelIndex {
@@ -260,6 +335,23 @@ mod tests {
     }
 
     #[test]
+    fn test_current_setting(){
+        let one_way = ExcelIndexRange::range_at(
+            ExcelIndex::from_tuple(0, 0),
+            ExcelIndex::from_tuple(5, 5),
+            ExcelIndex::from_tuple(2, 3)
+        );
+
+        let mut other_way = ExcelIndexRange::range(            ExcelIndex::from_tuple(0, 0),
+            ExcelIndex::from_tuple(5, 5),);
+
+        other_way.set_current(ExcelIndex::from_tuple(2, 3));
+
+
+        assert_eq!(one_way, other_way);
+    }
+
+    #[test]
     fn test_into_iter() {
         let expected = vec!["A4", "B4", "C4", "D4", "E4", "F4", "G4", "H4", "I4"];
 
@@ -268,6 +360,36 @@ mod tests {
         let result: Vec<String> = e1.into_iter().take(9).map(|x| x.to_string()).collect();
 
         assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn test_into_range_reverse() {
+        let expected = vec![
+            "D6", "C6", "B6", "A6", "D5", "C5", "B5", "A5", "D4", "C4", "B4", "A4",
+        ];
+
+        let e1: ExcelIndex = "A4".parse().unwrap();
+        let e2: ExcelIndex = "D6".parse().unwrap();
+
+        let result: Vec<String> = e1
+            .into_range_at_end(e2)
+            .rev()
+            .map(|x| x.to_string())
+            .collect();
+
+        assert_eq!(expected, result);
+
+        // for e in e1.into_range_reverse(e2).rev(){
+        //     println!("{}", e);
+        // }
+        // let mut t = e1.into_range_reverse(e2);
+
+        // println!("{:?}", t.next_back());
+        // println!("{:?}", t.next_back());
+        // println!("{:?}", t.next_back());
+        // println!("{:?}", t.next_back());
+
+        // assert!(false);
     }
 
 }

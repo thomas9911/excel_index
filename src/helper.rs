@@ -69,7 +69,14 @@ impl FromStr for AlphaNumber {
                 0 => 0,
                 _ => 1,
             };
-            sum += (p + q) as u32 * 26u32.pow(i as u32);
+            let power = match 26u32.checked_pow(i as u32){
+                Some(x) => x,
+                None => return Err(ParseError::Overflow)
+            };
+            sum += match ((p + q) as u32).checked_mul(power){
+                Some(x) => x,
+                None => return Err(ParseError::Overflow)
+            };
         }
 
         Ok(AlphaNumber {
@@ -122,6 +129,8 @@ mod tests {
         assert_eq!(t, Err(ParseError::InvalidFormat));
         let t: Result<AlphaNumber, _> = "ERR8".parse();
         assert_eq!(t, Err(ParseError::InvalidFormat));
+        let t: Result<AlphaNumber, _> = "ABCDEFGHIJKLMNOP".parse();
+        assert_eq!(t, Err(ParseError::Overflow));
     }
 
     #[test]

@@ -3,6 +3,7 @@ use std::fmt;
 #[derive(Debug, PartialEq)]
 pub enum ParseError {
     InvalidFormat,
+    Overflow,
 }
 
 impl fmt::Display for ParseError {
