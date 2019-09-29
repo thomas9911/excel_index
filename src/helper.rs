@@ -69,13 +69,13 @@ impl FromStr for AlphaNumber {
                 0 => 0,
                 _ => 1,
             };
-            let power = match 26u32.checked_pow(i as u32){
+            let power = match 26u32.checked_pow(i as u32) {
                 Some(x) => x,
-                None => return Err(ParseError::Overflow)
+                None => return Err(ParseError::Overflow),
             };
-            sum += match ((p + q) as u32).checked_mul(power){
+            sum += match ((p + q) as u32).checked_mul(power) {
                 Some(x) => x,
-                None => return Err(ParseError::Overflow)
+                None => return Err(ParseError::Overflow),
             };
         }
 

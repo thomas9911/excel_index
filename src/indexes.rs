@@ -110,7 +110,7 @@ impl ExcelIndexRange {
         }
     }
 
-    pub fn set_current(&mut self, current: ExcelIndex){
+    pub fn set_current(&mut self, current: ExcelIndex) {
         self.current = current;
     }
 
@@ -124,24 +124,11 @@ impl ExcelIndexRange {
     }
 
     pub fn range(start: ExcelIndex, end: ExcelIndex) -> ExcelIndexRange {
-        // ExcelIndexRange {
-        //     current: start.clone(),
-        //     start,
-        //     end: Some(end),
-        //     done: false,
-        // }
         ExcelIndexRange::range_at(start.clone(), end, start)
     }
 
     pub fn range_reverse(start: ExcelIndex, end: ExcelIndex) -> ExcelIndexRange {
-        // ExcelIndexRange {
-        //     current: end.clone(),
-        //     start,
-        //     end: Some(end),
-        //     done: false,
-        // }
         ExcelIndexRange::range_at(start, end.clone(), end)
-
     }
 
     pub fn range_bounded(start: ExcelIndex, end: ExcelIndex) -> ExcelIndexRange {
@@ -230,7 +217,6 @@ impl DoubleEndedIterator for ExcelIndexRange {
             }
 
             let next: ExcelIndex = (r - 1, t).into();
-
             let current = self.current.clone();
             self.current = next;
             return Some(current);
@@ -335,18 +321,17 @@ mod tests {
     }
 
     #[test]
-    fn test_current_setting(){
+    fn test_current_setting() {
         let one_way = ExcelIndexRange::range_at(
             ExcelIndex::from_tuple(0, 0),
             ExcelIndex::from_tuple(5, 5),
-            ExcelIndex::from_tuple(2, 3)
+            ExcelIndex::from_tuple(2, 3),
         );
 
-        let mut other_way = ExcelIndexRange::range(            ExcelIndex::from_tuple(0, 0),
-            ExcelIndex::from_tuple(5, 5),);
+        let mut other_way =
+            ExcelIndexRange::range(ExcelIndex::from_tuple(0, 0), ExcelIndex::from_tuple(5, 5));
 
         other_way.set_current(ExcelIndex::from_tuple(2, 3));
-
 
         assert_eq!(one_way, other_way);
     }
@@ -378,18 +363,6 @@ mod tests {
             .collect();
 
         assert_eq!(expected, result);
-
-        // for e in e1.into_range_reverse(e2).rev(){
-        //     println!("{}", e);
-        // }
-        // let mut t = e1.into_range_reverse(e2);
-
-        // println!("{:?}", t.next_back());
-        // println!("{:?}", t.next_back());
-        // println!("{:?}", t.next_back());
-        // println!("{:?}", t.next_back());
-
-        // assert!(false);
     }
 
 }
